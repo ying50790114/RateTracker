@@ -60,7 +60,7 @@ fetch(proxyUrl + rateUrl)
   const tableBody = document.querySelector("#exchangeTable tbody");
   tableBody.innerHTML = "";
   rows.forEach(row => {
-    const currency = row.querySelector(".hidden-phone").innerText.trim();
+    const currency = row.querySelector(".hidden-phone")?.innerText.trim();
     if(currency === "美金 (USD)" || currency === "日圓 (JPY)") {
       const cells = row.querySelectorAll("td");
       const tr = document.createElement("tr");
@@ -69,7 +69,10 @@ fetch(proxyUrl + rateUrl)
     }
   });
 })
-.catch(err => { console.error(err); document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; });
+.catch(err => { 
+  console.error(err); 
+  document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; 
+});
 
 // 黃金價格抓取，簡化成 2x3，只顯示第一個「黃金存摺」
 const goldUrl = encodeURIComponent("https://rate.bot.com.tw/gold?Lang=zh-TW");
@@ -82,11 +85,23 @@ fetch(proxyUrl + goldUrl)
   const tableBody = document.querySelector("#goldTable tbody");
   tableBody.innerHTML = "";
 
-  for (const row of rows) {
-    const name = row.querySelector("td:nth-child(1)").innerText.trim();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const name = row.querySelector("td")?.textContent.trim();
     if(name === "黃金存摺") {
-      const cashBuy = row.querySelector("td:nth-child(2)").innerText.replace(/[^\d.]/g,''); // 只取數字
-      const cashSell = row.querySelector("td:nth-child(3)").innerText.replace(/[^\d.]/g,''); // 只取數字
+      // 賣出價格在本列第三個 td
+      const cashSell = row.querySelector("td.text-right")?.textContent.trim().replace(/[^\d.]/g,'') || '';
+
+      // 買入價格在下一列第三個 td
+      const nextRow = rows[i+1];
+      let cashBuy = '';
+      if(nextRow){
+        const tds = nextRow.querySelectorAll("td");
+        if(tds.length >= 3){
+          cashBuy = tds[2].textContent.trim().replace(/[^\d.]/g,'');
+        }
+      }
+
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${name}</td><td>${cashBuy}</td><td>${cashSell}</td>`;
       tableBody.appendChild(tr);
@@ -94,7 +109,10 @@ fetch(proxyUrl + goldUrl)
     }
   }
 })
-.catch(err => { console.error(err); document.querySelector("#goldTable tbody").innerHTML="<tr><td colspan='3'>無法載入資料</td></tr>"; });
+.catch(err => { 
+  console.error(err); 
+  document.querySelector("#goldTable tbody").innerHTML="<tr><td colspan='3'>無法載入資料</td></tr>"; 
+});
 </script>
 </body>
 </html>
