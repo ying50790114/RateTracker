@@ -3,29 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>我的網頁App</title>
-<link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#0000ff">
-<!-- OneSignal SDK -->
-<script src="https://cdn.onesignal.com/sdks/OneSignalSDK.js" async=""></script>
+<title>臺灣銀行-匯率與黃金價格</title>
+<style>
+  body { font-family: Arial, sans-serif; background-color: #f9f9f9; margin:20px; text-align:center; }
+  h1 { margin-bottom:40px; }
+  .container { display:flex; flex-direction:column; align-items:center; gap:40px; }
+  table { border-collapse: collapse; width: 400px; text-align:center; margin:0 auto; }
+  th, td { border:1px solid #ccc; padding:8px 12px; }
+  .update-time { margin-bottom:10px; font-size:0.9rem; color:#555; }
+</style>
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
 <script>
-  window.OneSignal = window.OneSignal || [];
-  OneSignal.push(function() {
-    OneSignal.init({
-      appId: "你的Onesignal APP ID",
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "2e011829-ac0c-4e0e-923b-a3fc41c0e66a",
     });
   });
-
-  // 註冊 Service Worker
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/sw.js')
-    .then(() => console.log('Service Worker registered'))
-    .catch(err => console.log(err));
-  }
 </script>
 </head>
 <body>
-<h1>歡迎使用我的 PWA App</h1>
-<p>這是你的靜態網頁，可在 Android 上加到主螢幕並接收通知。</p>
+<h1>臺灣銀行-匯率與黃金價格</h1>
+<div class="container">
+  <div>
+    <h2>匯率</h2>
+    <div id="exchangeTime" class="update-time">載入中...</div>
+    <table id="exchangeTable">
+      <thead>
+        <tr>
+          <th>幣別</th>
+          <th>現金買入</th>
+          <th>現金賣出</th>
+          <th>即期買入</th>
+          <th>即期賣出</th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="5">載入中...</td></tr></tbody>
+    </table>
+    <ul class="explanation">
+      <li style="text-align: left;">現金買入：銀行向我們買入外幣現鈔的價格</li>
+      <li style="text-align: left;">現金賣出：銀行向我們賣出外幣現鈔的價格</li>
+      <li style="text-align: left;">即期買入：銀行向我們買入外幣帳戶中之外幣的價格</li>
+      <li style="text-align: left;">即期賣出：銀行向我們賣出外幣帳戶中之外幣的價格</li>
+    </ul>
+  </div>
+
+  <div>
+    <h2>黃金 (台幣/公克)</h2>
+    <div id="goldTime" class="update-time">載入中...</div>
+    <table id="goldTable">
+      <thead>
+        <tr>
+          <th>商品</th>
+          <th>本行買入</th>
+          <th>本行賣出</th>
+        </tr>
+      </thead>
+      <tbody><tr><td colspan="3">載入中...</td></tr></tbody>
+    </table>
+    <ul class="explanation">
+      <li style="text-align: left;">本行買入：銀行向我們買入黃金的價格</li>
+      <li style="text-align: left;">本行賣出：銀行向我們賣出黃金的價格</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const proxyUrl = "https://api.allorigins.win/get?url=";
+
+// 匯率抓取
+const rateUrl = encodeURIComponent("https://rate.bot.com.tw/xrt?Lang=zh-TW");
+fetch(proxyUrl + rateUrl)
+.then(res => res.json())
+.then(data => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(data.contents, "text/html");
+  const rows = Array.from(doc.querySelectorAll("table tbody tr"));
+  const tableBody = document.querySelector("#exchangeTable tbody");
+  tableBody.innerHTML = "";
+  rows.forEach(row => {
+    const currency = row.querySelector(".hidden-phone")?.innerText.trim();
+    if(currency === "美金 (USD)" || currency === "日圓 (JPY)") {
+      const cells = row.querySelectorAll("td");
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${currency}</td><td>${cells[1].innerText}</td><td>${cells[2].innerText}</td><td>${cells[3].innerText}</td><td>${cells[4].innerText}</td>`;
+      tableBody.appendChild(tr);
+    }
+  });
+  // 更新匯率抓取時間
+  const now = new Date();
+  document.querySelector("#exchangeTime").innerText = "更新時間：" + now.toLocaleString();
+})
+.catch(err => { 
+  console.error(err); 
+  document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; 
+  document.querySelector("#exchangeTime").innerText = "";
+});
+
+// 黃金價格抓取
+const goldUrl = encodeURIComponent("https://rate.bot.com.tw/gold?Lang=zh-TW");
+fetch(proxyUrl + goldUrl)
+.then(res => res.json())
+.then(data => {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(data.contents, "text/html");
+  const rows = Array.from(doc.querySelectorAll("table tbody tr"));
+  const tableBody = document.querySelector("#goldTable tbody");
+  tableBody.innerHTML = "";
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const name = row.querySelector("td")?.textContent.trim();
+    if(name === "黃金存摺") {
+      const cashSell = row.querySelector("td.text-right")?.textContent.trim().replace(/[^\d.]/g,'') || '';
+      const nextRow = rows[i+1];
+      let cashBuy = '';
+      if(nextRow){
+        const tds = nextRow.querySelectorAll("td");
+        if(tds.length >= 3){
+          cashBuy = tds[2].textContent.trim().replace(/[^\d.]/g,'');
+        }
+      }
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${name}</td><td>${cashBuy}</td><td>${cashSell}</td>`;
+      tableBody.appendChild(tr);
+      break;
+    }
+  }
+  // 更新黃金抓取時間
+  const now = new Date();
+  document.querySelector("#goldTime").innerText = "更新時間：" + now.toLocaleString();
+})
+.catch(err => { 
+  console.error(err); 
+  document.querySelector("#goldTable tbody").innerHTML="<tr><td colspan='3'>無法載入資料</td></tr>"; 
+  document.querySelector("#goldTime").innerText = "";
+});
+</script>
 </body>
 </html>
