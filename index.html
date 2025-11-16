@@ -49,7 +49,7 @@
 <script>
 const proxyUrl = "https://api.allorigins.win/get?url=";
 
-// 匯率抓取 (美金 / 日圓)
+// 匯率抓取
 const rateUrl = encodeURIComponent("https://rate.bot.com.tw/xrt?Lang=zh-TW");
 fetch(proxyUrl + rateUrl)
 .then(res => res.json())
@@ -71,7 +71,7 @@ fetch(proxyUrl + rateUrl)
 })
 .catch(err => { console.error(err); document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; });
 
-// 黃金價格抓取 (台幣/公克)
+// 黃金價格抓取，簡化成 2x3，只顯示第一個「黃金存摺」
 const goldUrl = encodeURIComponent("https://rate.bot.com.tw/gold?Lang=zh-TW");
 fetch(proxyUrl + goldUrl)
 .then(res => res.json())
@@ -81,14 +81,18 @@ fetch(proxyUrl + goldUrl)
   const rows = Array.from(doc.querySelectorAll("table tbody tr"));
   const tableBody = document.querySelector("#goldTable tbody");
   tableBody.innerHTML = "";
-  rows.forEach(row => {
+
+  for (const row of rows) {
     const name = row.querySelector("td:nth-child(1)").innerText.trim();
-    const cashBuy = row.querySelector("td:nth-child(2)").innerText.trim();
-    const cashSell = row.querySelector("td:nth-child(3)").innerText.trim();
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${name}</td><td>${cashBuy}</td><td>${cashSell}</td>`;
-    tableBody.appendChild(tr);
-  });
+    if(name === "黃金存摺") {
+      const cashBuy = row.querySelector("td:nth-child(2)").innerText.replace(/[^\d.]/g,''); // 只取數字
+      const cashSell = row.querySelector("td:nth-child(3)").innerText.replace(/[^\d.]/g,''); // 只取數字
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${name}</td><td>${cashBuy}</td><td>${cashSell}</td>`;
+      tableBody.appendChild(tr);
+      break; // 只取第一筆黃金存摺
+    }
+  }
 })
 .catch(err => { console.error(err); document.querySelector("#goldTable tbody").innerHTML="<tr><td colspan='3'>無法載入資料</td></tr>"; });
 </script>
