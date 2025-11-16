@@ -1,48 +1,100 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<title>匯率與金價查詢</title>
-<style>
-  body { font-family: sans-serif; padding: 20px; }
-  h1 { font-size: 24px; }
-  .box { padding: 15px; background: #f0f0f0; border-radius: 8px; margin-bottom: 10px; }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>匯率與黃金價格</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        h1, h2 {
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+        table {
+            border-collapse: collapse;
+            margin: 0 auto;
+            width: 300px;
+            text-align: center;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            padding: 8px 12px;
+        }
+        iframe {
+            border: 1px solid #ccc;
+            width: 600px;
+            height: 500px;
+        }
+    </style>
 </head>
 <body>
-<h1>📊 最新匯率與黃金價格</h1>
+    <h1>匯率與黃金價格</h1>
+    <div class="container">
+        <div>
+            <h2>匯率 (USD / JPY)</h2>
+            <table id="exchangeTable">
+                <thead>
+                    <tr>
+                        <th>幣別</th>
+                        <th>現金買入</th>
+                        <th>現金賣出</th>
+                        <th>即期買入</th>
+                        <th>即期賣出</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="5">載入中...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div>
+            <h2>黃金價格</h2>
+            <iframe src="https://rate.bot.com.tw/gold?Lang=zh-TW"></iframe>
+        </div>
+    </div>
 
-<div class="box">
-  <strong>💵 美元匯率（現金賣出）</strong>
-  <div id="usd">載入中...</div>
-</div>
+    <script>
+        const proxyUrl = "https://api.allorigins.win/get?url=";
+        const targetUrl = encodeURIComponent("https://rate.bot.com.tw/xrt?Lang=zh-TW");
 
-<div class="box">
-  <strong>🥇 黃金牌價（公克）</strong>
-  <div id="gold">載入中...</div>
-</div>
+        fetch(proxyUrl + targetUrl)
+            .then(response => response.json())
+            .then(data => {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(data.contents, "text/html");
+                const rows = Array.from(doc.querySelectorAll("table tbody tr"));
+                const tableBody = document.querySelector("#exchangeTable tbody");
+                tableBody.innerHTML = "";
 
-<script>
-async function getUSDTWD() {
-  const url = "https://rate.bot.com.tw/xrt/flcsv/0/day";
-  const res = await fetch(url);
-  const csv = await res.text();
-  const usdLine = csv.split("\n").find(line => line.includes("USD"));
-  return usdLine.split(",")[12];
-}
-
-async function getGold() {
-  const url = "https://rate.bot.com.tw/gold?Lang=zh-TW";
-  const res = await fetch(url);
-  const html = await res.text();
-  const match = html.match(/黃金（公克）買入<\/td>\s*<td>(.*?)</);
-  return match ? match[1] : "無法取得資料";
-}
-
-(async () => {
-  document.getElementById("usd").innerText = await getUSDTWD();
-  document.getElementById("gold").innerText = await getGold();
-})();
-</script>
+                rows.forEach(row => {
+                    const currency = row.querySelector(".hidden-phone").innerText.trim();
+                    if (currency === "美金 (USD)" || currency === "日圓 (JPY)") {
+                        const cells = row.querySelectorAll("td");
+                        const tr = document.createElement("tr");
+                        tr.innerHTML = `
+                            <td>${currency}</td>
+                            <td>${cells[1].innerText}</td>
+                            <td>${cells[2].innerText}</td>
+                            <td>${cells[3].innerText}</td>
+                            <td>${cells[4].innerText}</td>
+                        `;
+                        tableBody.appendChild(tr);
+                    }
+                });
+            })
+            .catch(err => {
+                console.error("抓取匯率失敗:", err);
+                document.querySelector("#exchangeTable tbody").innerHTML = "<tr><td colspan='5'>無法載入資料</td></tr>";
+            });
+    </script>
 </body>
 </html>
