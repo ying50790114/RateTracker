@@ -74,31 +74,51 @@ const proxyUrl = "https://api.allorigins.win/get?url=";
 // 匯率抓取
 const rateUrl = encodeURIComponent("https://rate.bot.com.tw/xrt?Lang=zh-TW");
 fetch(proxyUrl + rateUrl)
-.then(res => res.json())
-.then(data => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(data.contents, "text/html");
-  const rows = Array.from(doc.querySelectorAll("table tbody tr"));
-  const tableBody = document.querySelector("#exchangeTable tbody");
-  tableBody.innerHTML = "";
-  rows.forEach(row => {
-    const currency = row.querySelector(".hidden-phone")?.innerText.trim();
-    if(currency === "美金 (USD)" || currency === "日圓 (JPY)") {
-      const cells = row.querySelectorAll("td");
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${currency}</td><td>${cells[1].innerText}</td><td>${cells[2].innerText}</td><td>${cells[3].innerText}</td><td>${cells[4].innerText}</td>`;
-      tableBody.appendChild(tr);
-    }
+  .then(res => res.json())
+  .then(data => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(data.contents, "text/html");
+
+    // 抓所有列
+    const rows = Array.from(doc.querySelectorAll("table tbody tr"));
+    const tableBody = document.querySelector("#exchangeTable tbody");
+    tableBody.innerHTML = "";
+
+    rows.forEach(row => {
+
+      // 🔥 新版穩定抓法：用 data-table="幣別"
+      const currencyTd = row.querySelector('td[data-table="幣別"]');
+      if (!currencyTd) return;
+
+      const rawText = currencyTd.innerText.trim();
+
+      // 你要的幣別
+      if (rawText.includes("美金 (USD)") || rawText.includes("日圓 (JPY)")) {
+
+        const cells = row.querySelectorAll("td");
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${rawText}</td>
+          <td>${cells[1].innerText.trim()}</td>
+          <td>${cells[2].innerText.trim()}</td>
+          <td>${cells[3].innerText.trim()}</td>
+          <td>${cells[4].innerText.trim()}</td>
+        `;
+
+        tableBody.appendChild(tr);
+      }
+    });
+
+    document.querySelector("#exchangeTime").innerText =
+      "更新時間：" + new Date().toLocaleString();
+  })
+  .catch(err => {
+    console.error(err);
+    document.querySelector("#exchangeTable tbody").innerHTML =
+      "<tr><td colspan='5'>無法載入資料</td></tr>";
+    document.querySelector("#exchangeTime").innerText = "";
   });
-  // 更新匯率抓取時間
-  const now = new Date();
-  document.querySelector("#exchangeTime").innerText = "更新時間：" + now.toLocaleString();
-})
-.catch(err => { 
-  console.error(err); 
-  document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; 
-  document.querySelector("#exchangeTime").innerText = "";
-});
 
 // 黃金價格抓取
 const goldUrl = encodeURIComponent("https://rate.bot.com.tw/gold?Lang=zh-TW");
