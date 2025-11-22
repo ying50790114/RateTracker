@@ -113,7 +113,7 @@ const rateApi = "https://corsproxy.io/https://rate.bot.com.tw/xrt?Lang=zh-TW";
 //     document.querySelector("#exchangeTable tbody").innerHTML =
 //       "<tr><td colspan='5'>無法載入資料</td></tr>";
 //   });
-fetch(rateUrl)
+fetch(rateApi)
 .then(res => res.json())
 .then(data => {
   const parser = new DOMParser();
