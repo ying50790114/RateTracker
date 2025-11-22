@@ -1,50 +1,26 @@
 name: OneSignal Hourly Notification
 
-# 每小時觸發
 on:
   schedule:
-    - cron: '0 * * * *' # 每小時第0分鐘
-  workflow_dispatch: # 可手動觸發
+    - cron: '0 * * * *' # 每小時整點
+  workflow_dispatch:
 
 jobs:
-  send_notification:
+  notify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Send OneSignal notification
-        uses: actions/github-script@v7
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          script: |
-            const fetch = require('node-fetch');
+          node-version: '18'
 
-            const appId = process.env.ONESIGNAL_APP_ID;
-            const restKey = process.env.ONESIGNAL_REST_KEY;
+      - name: Install dependencies
+        run: npm install node-fetch@2
 
-            // 要發送的訊息
-            const message = "最新匯率與黃金價格已更新！";
-
-            const response = await fetch('https://onesignal.com/api/v1/notifications', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Basic ${restKey}`
-              },
-              body: JSON.stringify({
-                app_id: appId,
-                included_segments: ["Subscribed Users"],
-                headings: { en: "匯率 & 黃金通知" },
-                contents: { en: message }
-              })
-            });
-
-            if (!response.ok) {
-              const text = await response.text();
-              throw new Error(`OneSignal API error: ${response.status} - ${text}`);
-            } else {
-              console.log("Notification sent successfully!");
-            }
+      - name: Run notification script
+        run: node .github/scripts/sendNotification.js
         env:
           ONESIGNAL_APP_ID: ${{ secrets.ONESIGNAL_APP_ID }}
           ONESIGNAL_REST_KEY: ${{ secrets.ONESIGNAL_REST_KEY }}
