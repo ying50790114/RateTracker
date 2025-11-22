@@ -73,6 +73,46 @@ const proxyUrl = "https://api.allorigins.win/get?url=";
 
 // 匯率抓取
 const rateApi = "https://corsproxy.io/https://rate.bot.com.tw/xrt/fltxt/0/day";
+// fetch(rateApi)
+//   .then(res => res.text())
+//   .then(txt => {
+//     const lines = txt.trim().split("\n");
+//     const tableBody = document.querySelector("#exchangeTable tbody");
+//     tableBody.innerHTML = "";
+
+//     // 從第2行開始是資料
+//     for (let i = 1; i < lines.length; i++) {
+//       const parts = lines[i].trim().split(/\s+/);
+
+//       const currency = parts[0];
+//       if (currency === "USD" || currency === "JPY") {
+//         const cashBuy = parts[1];
+//         const cashSell = parts[2];
+//         const spotBuy = parts[3];
+//         const spotSell = parts[4];
+
+//         const tr = document.createElement("tr");
+//         const cname = currency === "USD" ? "美金 (USD)" : "日圓 (JPY)";
+
+//         tr.innerHTML = `
+//           <td>${cname}</td>
+//           <td>${cashBuy}</td>
+//           <td>${cashSell}</td>
+//           <td>${spotBuy}</td>
+//           <td>${spotSell}</td>
+//         `;
+//         tableBody.appendChild(tr);
+//       }
+//     }
+
+//     document.querySelector("#exchangeTime").innerText =
+//       "更新時間：" + new Date().toLocaleString();
+//   })
+//   .catch(err => {
+//     console.error(err);
+//     document.querySelector("#exchangeTable tbody").innerHTML =
+//       "<tr><td colspan='5'>無法載入資料</td></tr>";
+//   });
 fetch(rateApi)
   .then(res => res.text())
   .then(txt => {
@@ -86,10 +126,11 @@ fetch(rateApi)
 
       const currency = parts[0];
       if (currency === "USD" || currency === "JPY") {
-        const cashBuy = parts[1];
-        const cashSell = parts[2];
-        const spotBuy = parts[3];
-        const spotSell = parts[4];
+        // parts[1]~[4] 對應 TXT 格式的現金買入/賣出, 即期買入/賣出
+        const cashBuy = parts[2];  // 本行買入
+        const cashSell = parts[11]; // 本行賣出
+        const spotBuy = parts[3];   // 即期買入
+        const spotSell = parts[12]; // 即期賣出
 
         const tr = document.createElement("tr");
         const cname = currency === "USD" ? "美金 (USD)" : "日圓 (JPY)";
@@ -110,8 +151,9 @@ fetch(rateApi)
   })
   .catch(err => {
     console.error(err);
-    document.querySelector("#exchangeTable tbody").innerHTML =
-      "<tr><td colspan='5'>無法載入資料</td></tr>";
+    const tableBody = document.querySelector("#exchangeTable tbody");
+    tableBody.innerHTML = "<tr><td colspan='5'>無法載入資料</td></tr>";
+    document.querySelector("#exchangeTime").innerText = "";
   });
   
 // 黃金價格抓取
