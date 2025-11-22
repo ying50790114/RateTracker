@@ -72,73 +72,47 @@
 const proxyUrl = "https://api.allorigins.win/get?url=";
 
 // 匯率抓取
-const rateApi = "https://corsproxy.io/https://rate.bot.com.tw/xrt?Lang=zh-TW";
-// fetch(rateApi)
-//   .then(res => res.text())
-//   .then(txt => {
-//     const lines = txt.trim().split("\n");
-//     const tableBody = document.querySelector("#exchangeTable tbody");
-//     tableBody.innerHTML = "";
-
-//     // 從第2行開始是資料
-//     for (let i = 1; i < lines.length; i++) {
-//       const parts = lines[i].trim().split(/\s+/);
-
-//       const currency = parts[0];
-//       if (currency === "USD" || currency === "JPY") {
-//         const cashBuy = parts[1];
-//         const cashSell = parts[2];
-//         const spotBuy = parts[3];
-//         const spotSell = parts[4];
-
-//         const tr = document.createElement("tr");
-//         const cname = currency === "USD" ? "美金 (USD)" : "日圓 (JPY)";
-
-//         tr.innerHTML = `
-//           <td>${cname}</td>
-//           <td>${cashBuy}</td>
-//           <td>${cashSell}</td>
-//           <td>${spotBuy}</td>
-//           <td>${spotSell}</td>
-//         `;
-//         tableBody.appendChild(tr);
-//       }
-//     }
-
-//     document.querySelector("#exchangeTime").innerText =
-//       "更新時間：" + new Date().toLocaleString();
-//   })
-//   .catch(err => {
-//     console.error(err);
-//     document.querySelector("#exchangeTable tbody").innerHTML =
-//       "<tr><td colspan='5'>無法載入資料</td></tr>";
-//   });
+const rateApi = "https://corsproxy.io/https://rate.bot.com.tw/xrt/fltxt/0/day";
 fetch(rateApi)
-.then(res => res.json())
-.then(data => {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(data.contents, "text/html");
-  const rows = Array.from(doc.querySelectorAll("table tbody tr"));
-  const tableBody = document.querySelector("#exchangeTable tbody");
-  tableBody.innerHTML = "";
-  rows.forEach(row => {
-    const currency = row.querySelector(".hidden-phone")?.innerText.trim();
-    if(currency === "美金 (USD)" || currency === "日圓 (JPY)") {
-      const cells = row.querySelectorAll("td");
-      const tr = document.createElement("tr");
-      tr.innerHTML = `<td>${currency}</td><td>${cells[1].innerText}</td><td>${cells[2].innerText}</td><td>${cells[3].innerText}</td><td>${cells[4].innerText}</td>`;
-      tableBody.appendChild(tr);
+  .then(res => res.text())
+  .then(txt => {
+    const lines = txt.trim().split("\n");
+    const tableBody = document.querySelector("#exchangeTable tbody");
+    tableBody.innerHTML = "";
+
+    // 從第2行開始是資料
+    for (let i = 1; i < lines.length; i++) {
+      const parts = lines[i].trim().split(/\s+/);
+
+      const currency = parts[0];
+      if (currency === "USD" || currency === "JPY") {
+        const cashBuy = parts[1];
+        const cashSell = parts[2];
+        const spotBuy = parts[3];
+        const spotSell = parts[4];
+
+        const tr = document.createElement("tr");
+        const cname = currency === "USD" ? "美金 (USD)" : "日圓 (JPY)";
+
+        tr.innerHTML = `
+          <td>${cname}</td>
+          <td>${cashBuy}</td>
+          <td>${cashSell}</td>
+          <td>${spotBuy}</td>
+          <td>${spotSell}</td>
+        `;
+        tableBody.appendChild(tr);
+      }
     }
+
+    document.querySelector("#exchangeTime").innerText =
+      "更新時間：" + new Date().toLocaleString();
+  })
+  .catch(err => {
+    console.error(err);
+    document.querySelector("#exchangeTable tbody").innerHTML =
+      "<tr><td colspan='5'>無法載入資料</td></tr>";
   });
-  // 更新匯率抓取時間
-  const now = new Date();
-  document.querySelector("#exchangeTime").innerText = "更新時間：" + now.toLocaleString();
-})
-.catch(err => { 
-  console.error(err); 
-  document.querySelector("#exchangeTable tbody").innerHTML="<tr><td colspan='5'>無法載入資料</td></tr>"; 
-  document.querySelector("#exchangeTime").innerText = "";
-});
   
 // 黃金價格抓取
 const goldUrl = encodeURIComponent("https://rate.bot.com.tw/gold?Lang=zh-TW");
